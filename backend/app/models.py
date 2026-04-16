@@ -7,6 +7,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.db.base import Base
+from sqlalchemy import JSON  # add this import
 
 
 # ---------------- ENUMS ---------------- #
@@ -26,8 +27,6 @@ class TaskStatus(str, enum.Enum):
     FAILED = "failed"
     PARTIAL = "partial"
 
-
-# ---------------- USER ---------------- #
 
 class User(Base):
     __tablename__ = "users"
@@ -129,6 +128,8 @@ class PDF(Base):
 
     retry_count = Column(Integer, default=0)
     error_message = Column(String)
+
+    result = Column(JSON, nullable=True)
 
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)

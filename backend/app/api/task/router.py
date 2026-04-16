@@ -9,6 +9,7 @@ from app.db.base import Base
 from app.config import s3_client
 from app.core.config import settings
 from botocore.exceptions import ClientError
+from app.worker.tasks import process_pdf
 
 router = APIRouter()
 
