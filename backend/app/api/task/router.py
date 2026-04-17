@@ -51,6 +51,29 @@ def initiate_upload(
             raise HTTPException(status_code=400, detail=f"{file.filename} has invalid content type")
 
         
+    if data.idempotency_key:
+        existing_task = db.query(Task).filter(
+            Task.user_id == current_user.id,
+            Task.idempotency_key == data.idempotency_key
+        ).first()
+        
+        if existing_task:
+            pdfs = db.query(PDF).filter(PDF.task_id == existing_task.id).all()
+            document_response = []
+            for pdf in pdfs:
+                upload_url = generate_presigned_url(pdf.s3_key)
+                document_response.append({
+                    "document_id": str(pdf.id),
+                    "upload_url": upload_url,
+                    "s3_key": pdf.s3_key
+                })
+            
+            return {
+                "task_id": str(existing_task.id),
+                "documents": document_response,
+                "idempotent": True
+            }
+
     task_id = uuid.uuid4()
     user_id = current_user.id
 
@@ -61,7 +84,8 @@ def initiate_upload(
         total_files=len(data.files),
         processed_files=0,
         failed_files=0,
-        status=TaskStatus.PENDING
+        status=TaskStatus.PENDING,
+        idempotency_key=data.idempotency_key
     )
 
     db.add(task)

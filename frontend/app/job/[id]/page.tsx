@@ -212,7 +212,7 @@ export default function JobDetail({ params }: { params: Promise<{ id: string }> 
                   type="text"
                   value={data.title}
                   onSave={(val) => handleUpdateField("title", val)}
-                  disabled={job.status !== "completed"}
+                  disabled={job.status !== "completed" || isFinalized}
                 />
                 
                 <EditableField
@@ -220,7 +220,7 @@ export default function JobDetail({ params }: { params: Promise<{ id: string }> 
                   type="text"
                   value={data.category}
                   onSave={(val) => handleUpdateField("category", val)}
-                  disabled={job.status !== "completed"}
+                  disabled={job.status !== "completed" || isFinalized}
                 />
                 
                 <EditableField
@@ -228,7 +228,7 @@ export default function JobDetail({ params }: { params: Promise<{ id: string }> 
                   type="textarea"
                   value={data.summary}
                   onSave={(val) => handleUpdateField("summary", val)}
-                  disabled={job.status !== "completed"}
+                  disabled={job.status !== "completed" || isFinalized}
                 />
                 
                 <EditableField
@@ -236,13 +236,13 @@ export default function JobDetail({ params }: { params: Promise<{ id: string }> 
                   type="tags"
                   value={data.keywords}
                   onSave={(val) => handleUpdateField("keywords", val)}
-                  disabled={job.status !== "completed"}
+                  disabled={job.status !== "completed" || isFinalized}
                 />
 
                 <div className="pt-6 mt-6 border-t border-gray-100 flex flex-wrap gap-3 justify-end">
                   <button
                     onClick={handleSave}
-                    disabled={job.status !== "completed"}
+                    disabled={job.status !== "completed" || isFinalized}
                     className="flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     <Save className="h-4 w-4 mr-2" />
@@ -250,7 +250,7 @@ export default function JobDetail({ params }: { params: Promise<{ id: string }> 
                   </button>
                   <button
                     onClick={handleFinalize}
-                    disabled={job.status !== "completed"}
+                    disabled={job.status !== "completed" || isFinalized}
                     className="flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
                   >
                     <CheckCircle className="h-4 w-4 mr-2" />

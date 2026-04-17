@@ -9,6 +9,7 @@ class FileMeta(BaseModel):
 class CreateTask(BaseModel):
     name: str
     files: List[FileMeta]
+    idempotency_key: Optional[str] = None
 
 class UpdatePDFstatus(BaseModel):
     task_id: UUID

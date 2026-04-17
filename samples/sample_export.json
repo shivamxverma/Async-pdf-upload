@@ -1,0 +1,18 @@
+[
+  {
+    "file_name": "sample_invoice.pdf",
+    "status": "completed",
+    "result": {
+      "filename": "sample_invoice.pdf",
+      "file_size": 102456,
+      "file_type": "application/pdf",
+      "title": "Invoice # INV-2024-001",
+      "category": "Invoice",
+      "summary": "This document is an invoice for services rendered in March 2024. Total amount due is $1,250.00.",
+      "extracted_keywords": ["invoice", "payment", "services", "total", "march"],
+      "status": "Processed",
+      "content_preview": "Invoice No: INV-2024-001\nDate: 2024-03-15\nClient: Acme Corp\nDescription: Consultation Services..."
+    },
+    "is_finalized": true
+  }
+]

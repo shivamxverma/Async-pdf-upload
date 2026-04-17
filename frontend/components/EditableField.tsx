@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Edit2, Check, X } from "lucide-react";
 import { cn } from "../lib/utils";
 
@@ -13,6 +13,13 @@ interface EditableFieldProps {
 export function EditableField({ label, value, type, onSave, disabled }: EditableFieldProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [currentValue, setCurrentValue] = useState<string | string[]>(value);
+
+  // Sync with prop when it changes from outside
+  useEffect(() => {
+    if (!isEditing) {
+      setCurrentValue(value);
+    }
+  }, [value, isEditing]);
 
   const handleSave = () => {
     onSave(currentValue);
