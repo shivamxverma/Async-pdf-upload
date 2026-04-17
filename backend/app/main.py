@@ -14,7 +14,7 @@ app.add_middleware(SessionMiddleware, secret_key=settings.secret_key)
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
-    r = await aioredis.from_url("redis://localhost:6379/0")
+    r = await aioredis.from_url(settings.redis_url)
     pubsub = r.pubsub()
     await pubsub.psubscribe("task:*")
 

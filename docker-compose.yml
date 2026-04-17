@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "8001:8000"
+    env_file:
+      - ./backend/.env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      # Database and AWS variables will be read from .env
+    depends_on:
+      - redis
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: always
+    command: celery -A app.worker.tasks worker --loglevel=info
+    env_file:
+      - ./backend/.env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      # Celery worker needs more stability on Mac sometimes, but on Linux it doesn't need --pool=solo usually
+      # To be safe for all environments:
+      - OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
+    depends_on:
+      - redis
+
+volumes:
+  redis_data:
