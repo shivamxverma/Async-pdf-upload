@@ -158,3 +158,47 @@ def complete_upload(
             str(pdf.id) for pdf in pdfs if pdf.status == DocumentStatus.FAILED
         ]
     }
+
+
+@router.get("/{task_id}")
+def get_task(task_id: uuid.UUID, db: Session = Depends(get_session)):
+    task = db.get(Task, task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    pdfs = db.query(PDF).filter(PDF.task_id == task_id).all()
+    
+    return {
+        "id": str(task.id),
+        "name": task.name,
+        "status": task.status,
+        "total_files": task.total_files,
+        "processed_files": task.processed_files,
+        "failed_files": task.failed_files,
+        "created_at": task.created_at,
+        "documents": [
+            {
+                "id": str(pdf.id),
+                "file_name": pdf.file_name,
+                "status": pdf.status,
+                "result": pdf.result,
+                "created_at": pdf.created_at
+            }
+            for pdf in pdfs
+        ]
+    }
+
+@router.put("/{task_id}/result")
+def update_task_result(task_id: uuid.UUID, data: dict, db: Session = Depends(get_session)):
+    task = db.get(Task, task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    pdf = db.query(PDF).filter(PDF.task_id == task_id).first()
+    if not pdf:
+        raise HTTPException(status_code=404, detail="No documents found for this task")
+
+    pdf.result = data
+    db.commit()
+    
+    return {"message": "Document result updated successfully"}

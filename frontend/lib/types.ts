@@ -16,6 +16,7 @@ export type Job = {
   steps: Step[];
   createdAt: string;
   updatedAt: string;
+  result?: any;
 };
 
 export type ExtractedData = {

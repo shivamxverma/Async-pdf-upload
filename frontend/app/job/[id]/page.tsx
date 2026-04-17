@@ -23,17 +23,25 @@ export default function JobDetail({ params }: { params: Promise<{ id: string }> 
     keywords: [],
   });
 
-  // Mock data population once completed
   useEffect(() => {
     if (job?.status === "completed" && !data.title) {
-      setData({
-        title: job.fileName.replace(".pdf", ""),
-        category: "Invoice",
-        summary: "This document contains a monthly invoice with line items for web hosting and domain registration.",
-        keywords: ["invoice", "billing", "monthly"],
-      });
+      if (job.result) {
+        setData({
+          title: job.result.title || job.fileName.replace(".pdf", ""),
+          category: job.result.category || "",
+          summary: job.result.summary || "",
+          keywords: job.result.extracted_keywords || [],
+        });
+      } else {
+        setData({
+          title: job.fileName.replace(".pdf", ""),
+          category: "Unknown",
+          summary: "Details are still being fetched or weren't returned by the extraction step.",
+          keywords: ["pending"],
+        });
+      }
     }
-  }, [job?.status, job?.fileName, data.title]);
+  }, [job?.status, job?.fileName, data.title, job?.result]);
 
   if (!job) {
     return (
@@ -55,13 +63,33 @@ export default function JobDetail({ params }: { params: Promise<{ id: string }> 
     setData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSave = () => {
-    toast.success("Changes saved successfully");
+  const saveToServer = async (isFinalize: boolean) => {
+    try {
+      const payload = {
+        ...(job.result || {}),
+        title: data.title,
+        category: data.category,
+        summary: data.summary,
+        // Match the backend property name
+        extracted_keywords: data.keywords 
+      };
+
+      const response = await fetch(`http://localhost:8000/api/v1/task/${id}/result`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) throw new Error("Failed to save");
+
+      toast.success(isFinalize ? "Document finalized and locked" : "Changes saved successfully");
+    } catch (error) {
+      toast.error("Failed to update document result.");
+    }
   };
 
-  const handleFinalize = () => {
-    toast.success("Document finalized and locked");
-  };
+  const handleSave = () => saveToServer(false);
+  const handleFinalize = () => saveToServer(true);
 
   const handleExport = (format: "json" | "csv") => {
     toast.info(`Exporting as ${format.toUpperCase()}...`);

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { Job, JobStatus, PROGRESS_MAPPING, STEP_ORDER } from "../lib/types";
+import { Job, JobStatus, PROGRESS_MAPPING, STEP_ORDER, Step } from "../lib/types";
 
 interface JobState {
   jobs: Record<string, Job>;
@@ -8,7 +8,7 @@ interface JobState {
   setJobs: (jobs: Job[]) => void;
   updateJob: (id: string, updates: Partial<Job>) => void;
   addJob: (job: Job) => void;
-  handleIncomingEvent: (event: { job_id: string; event: string; status?: JobStatus; error?: string }) => void;
+  handleIncomingEvent: (event: { job_id: string; event: string; status?: JobStatus; error?: string; result?: any }) => void;
 }
 
 export const useJobStore = create<JobState>((set, get) => ({
@@ -41,7 +41,7 @@ export const useJobStore = create<JobState>((set, get) => ({
   })),
 
   handleIncomingEvent: (payload) => set((state) => {
-    const { job_id, event, status, error } = payload;
+    const { job_id, event, status, error, result } = payload;
     const existing = state.jobs[job_id];
     if (!existing) return state;
 
@@ -58,7 +58,7 @@ export const useJobStore = create<JobState>((set, get) => ({
       newStatus = "processing";
     }
 
-    const updatedSteps = existing.steps.map(step => {
+    const updatedSteps = existing.steps.map((step): Step => {
       const stepIndex = STEP_ORDER.indexOf(step.name);
       const currentIndex = STEP_ORDER.indexOf(event);
       
@@ -75,7 +75,9 @@ export const useJobStore = create<JobState>((set, get) => ({
     });
 
     // Special case for done
+    let finalProgress = progress;
     if (newStatus === "completed") {
+      finalProgress = 100;
       updatedSteps.forEach(step => {
         if (step.status !== "done") step.status = "done";
       });
@@ -86,10 +88,11 @@ export const useJobStore = create<JobState>((set, get) => ({
         ...state.jobs,
         [job_id]: {
           ...existing,
-          progress,
+          progress: finalProgress,
           status: newStatus,
           currentStep: event,
           steps: updatedSteps,
+          ...(result ? { result } : {}),
           updatedAt: new Date().toISOString()
         }
       }

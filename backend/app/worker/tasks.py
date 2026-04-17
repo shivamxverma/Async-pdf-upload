@@ -1,7 +1,7 @@
 from app.worker.celery_app import celery
 from sqlmodel import Session
 from app.db.engine import engine
-from app.models import PDF, DocumentStatus
+from app.models import PDF, Task, DocumentStatus, TaskStatus
 from app.utils.publisher import publish_progress
 from app.config.aws import get_s3_client
 from app.core.config import settings
@@ -57,10 +57,22 @@ def process_pdf(document_id: str):
 
         db.commit()
 
+        completed_pdfs = db.query(PDF).filter(PDF.task_id == pdf.task_id, PDF.status == DocumentStatus.COMPLETED).count()
+        failed_pdfs = db.query(PDF).filter(PDF.task_id == pdf.task_id, PDF.status == DocumentStatus.FAILED).count()
+        
+        task = db.get(Task, pdf.task_id)
+        if task:
+            task.processed_files = completed_pdfs
+            task.failed_files = failed_pdfs
+            if (completed_pdfs + failed_pdfs) >= task.total_files:
+                task.status = TaskStatus.COMPLETED if failed_pdfs == 0 else TaskStatus.PARTIAL
+                db.commit()
+
         publish_progress(channel, {
             "job_id": str(pdf.task_id),
             "event": "final_result_stored",
-            "status": "completed"
+            "status": "completed",
+            "result": extracted_data
         })
 
     except Exception as e:
