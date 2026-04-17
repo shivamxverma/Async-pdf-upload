@@ -1,27 +1,51 @@
-from fastapi import FastAPI
-# from contextlib import asynccontextmanager
+import asyncio
+import redis.asyncio as aioredis
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
-# from app.api.routes import api_router
-from app.core.config import settings
+from app.api.routes import api_router
 from app.core.middleware import setup_cors
 
-# @asynccontextmanager
-# async def lifespan(app: FastAPI):
-#     print("Application started")
+app = FastAPI(title="AsyncPDF Backend API",version="1.0.0",)
 
-#     yield
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    r = await aioredis.from_url("redis://localhost:6379/0")
+    pubsub = r.pubsub()
+    await pubsub.psubscribe("task:*")
 
-#     print("Application shutting down")
+    async def listen_to_redis():
+        try:
+            async for message in pubsub.listen():
+                if message["type"] == "pmessage":
+                    data = message["data"].decode("utf-8")
+                    await websocket.send_text(data)
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            print("Redis listen error:", e)
 
-app = FastAPI(
-    title="My Backend API",
-    version="1.0.0",
-    # lifespan=lifespan
-)
+    task = asyncio.create_task(listen_to_redis())
+
+    try:
+        while True:
+            data = await websocket.receive_text()
+            # Handle incoming data if necessary
+    except WebSocketDisconnect:
+        print("Client disconnected")
+    finally:
+        task.cancel()
+        try:
+            await pubsub.unsubscribe("task:*")
+            await pubsub.close()
+            await r.aclose()
+        except:
+            pass
+
 
 setup_cors(app)
 
-# app.include_router(api_router)
+app.include_router(api_router)
 
 @app.get("/health")
 def health_check():

@@ -7,7 +7,7 @@ class FileMeta(BaseModel):
     content_type: str
 
 class CreateTask(BaseModel):
-    user_id: str
+    # user_id: str
     name: str
     files: List[FileMeta]
 

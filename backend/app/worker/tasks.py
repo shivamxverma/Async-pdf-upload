@@ -1,14 +1,18 @@
 from app.worker.celery_app import celery
-from app.db.session import SessionLocal
+from sqlmodel import Session
+from app.db.engine import engine
 from app.models import PDF, DocumentStatus
 from app.utils.publisher import publish_progress
-from app.config import s3_client, settings
+from app.config.aws import get_s3_client
+from app.core.config import settings
+from app.utils.extractor import extract_pdf_data
 import time
 
 
 @celery.task
 def process_pdf(document_id: str):
-    db = SessionLocal()
+    db = Session(engine)
+    pdf = None
 
     try:
         pdf = db.get(PDF, document_id)
@@ -21,13 +25,13 @@ def process_pdf(document_id: str):
         db.commit()
 
         publish_progress(channel, {
-            "document_id": document_id,
-            "status": "processing",
-            "progress": 10
+            "job_id": str(pdf.task_id),
+            "event": "document_received",
+            "status": "processing"
         })
 
 
-        obj = s3_client.get_object(
+        obj = get_s3_client().get_object(
             Bucket=settings.aws_bucket_name,
             Key=pdf.s3_key
         )
@@ -35,23 +39,18 @@ def process_pdf(document_id: str):
         file_content = obj["Body"].read()
 
         publish_progress(channel, {
-            "document_id": document_id,
-            "status": "processing",
-            "progress": 30
+            "job_id": str(pdf.task_id),
+            "event": "parsing_started",
+            "status": "processing"
         })
-
-        time.sleep(2)
-
-        extracted_data = {
-            "length": len(file_content),
-            "preview": file_content[:50].decode(errors="ignore")
-        }
 
         publish_progress(channel, {
-            "document_id": document_id,
-            "status": "processing",
-            "progress": 70
+            "job_id": str(pdf.task_id),
+            "event": "extraction_started",
+            "status": "processing"
         })
+
+        extracted_data = extract_pdf_data(file_content, pdf.file_name)
 
         pdf.result = extracted_data  
         pdf.status = DocumentStatus.COMPLETED
@@ -59,9 +58,9 @@ def process_pdf(document_id: str):
         db.commit()
 
         publish_progress(channel, {
-            "document_id": document_id,
-            "status": "completed",
-            "progress": 100
+            "job_id": str(pdf.task_id),
+            "event": "final_result_stored",
+            "status": "completed"
         })
 
     except Exception as e:
@@ -73,9 +72,10 @@ def process_pdf(document_id: str):
             db.commit()
 
         publish_progress(channel, {
-            "document_id": document_id,
+            "job_id": str(pdf.task_id),
+            "event": "job_failed",
             "status": "failed",
-            "progress": 0
+            "error": str(e)
         })
 
     finally:

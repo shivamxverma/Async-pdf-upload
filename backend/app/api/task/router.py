@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 import uuid
-from app.db.session import get_db
+from app.db.session import get_session
 from app.models import Task, PDF, DocumentStatus, TaskStatus
 from app.api.task.schemas import CreateTask , FileMeta ,UpdatePDFstatus 
 from typing import List
 from app.db.base import Base
-from app.config import s3_client
+from app.config.aws import get_s3_client
 from app.core.config import settings
 from botocore.exceptions import ClientError
 from app.worker.tasks import process_pdf
@@ -15,7 +15,7 @@ router = APIRouter()
 
 def generate_presigned_url(s3_key: str) -> str:
     try:
-        url = s3_client.generate_presigned_url(
+        url = get_s3_client().generate_presigned_url(
             ClientMethod="put_object",
             Params={
                 "Bucket": settings.aws_bucket_name,
@@ -32,7 +32,7 @@ def generate_presigned_url(s3_key: str) -> str:
 @router.post("/upload/initiate")
 def initiate_upload(
     data: CreateTask,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_session)
 ):
     if not data.files:
         raise HTTPException(status_code=400, detail="No files provided")
@@ -46,7 +46,8 @@ def initiate_upload(
 
         
     task_id = uuid.uuid4()
-    user_id = uuid.uuid4()
+    # Using the valid dummy user ID we inserted via terminal
+    user_id = uuid.UUID("8e2bb44d-0153-4c6b-9b9a-72a2b5344b7c")
 
     task = Task(
         id=task_id,
@@ -102,7 +103,7 @@ def initiate_upload(
 @router.post("/upload/complete")
 def complete_upload(
     data: UpdatePDFstatus,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_session)
 ):
     task = db.get(Task, data.task_id)
     if not task:
@@ -126,7 +127,7 @@ def complete_upload(
             continue
 
         try:
-            s3_client.head_object(
+            get_s3_client().head_object(
                 Bucket=settings.aws_bucket_name,
                 Key=pdf.s3_key
             )

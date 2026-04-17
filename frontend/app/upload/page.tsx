@@ -1,0 +1,114 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
+import { FileUpload } from "../../components/FileUpload";
+import { useJobStore } from "../../store/useJobStore";
+import { STEP_ORDER } from "../../lib/types";
+
+export default function UploadPage() {
+  const router = useRouter();
+  const [isUploading, setIsUploading] = useState(false);
+  const addJob = useJobStore((state) => state.addJob);
+
+  const handleUpload = async (file: File) => {
+    setIsUploading(true);
+    
+    try {
+      // 1. Initiate the upload and get the pre-signed S3 URL
+      const response = await fetch("http://localhost:8000/api/v1/task/upload/initiate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: file.name,
+          files: [
+            {
+              filename: file.name,
+              content_type: file.type || "application/pdf"
+            }
+          ]
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to initiate upload: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      const jobId = data.task_id;
+      const documentId = data.documents[0].document_id;
+      const uploadUrl = data.documents[0].upload_url;
+
+      // 2. Upload the file to S3 using the pre-signed URL
+      const uploadResponse = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type || "application/pdf",
+        },
+        body: file,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error(`Failed to upload to S3: ${uploadResponse.statusText}`);
+      }
+
+      // 3. Notify the backend that the upload is complete
+      const completeResponse = await fetch("http://localhost:8000/api/v1/task/upload/complete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          task_id: jobId,
+          document_ids: [documentId]
+        })
+      });
+
+      if (!completeResponse.ok) {
+        throw new Error(`Failed to complete upload: ${completeResponse.statusText}`);
+      }
+
+      const now = new Date().toISOString();
+      
+      addJob({
+        id: jobId,
+        fileName: file.name,
+        status: "queued",
+        progress: 0,
+        currentStep: "queued",
+        steps: STEP_ORDER.map(name => ({ name, status: "pending" as const })),
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      router.push("/dashboard");
+    } catch (error) {
+      console.error("Upload failed", error);
+      setIsUploading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto animate-in fade-in zoom-in-95 duration-300">
+      <div className="mb-8">
+        <button
+          onClick={() => router.back()}
+          className="flex items-center text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors mb-4"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Dashboard
+        </button>
+        <h2 className="text-3xl font-bold tracking-tight text-gray-900">Upload Document</h2>
+        <p className="text-gray-500 mt-2">Upload a PDF document to start the extraction pipeline.</p>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+        <FileUpload onUpload={handleUpload} isUploading={isUploading} />
+      </div>
+    </div>
+  );
+}
