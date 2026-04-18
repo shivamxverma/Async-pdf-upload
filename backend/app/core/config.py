@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     google_client_id: str
     google_client_secret: str
     google_redirect_uri: str
+    frontend_url: str = "http://localhost:3000"
     redis_url: str = "redis://localhost:6379/0"
 
 

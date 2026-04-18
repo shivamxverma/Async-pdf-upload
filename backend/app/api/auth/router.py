@@ -43,7 +43,7 @@ async def auth_callback(request: Request, db: Session = Depends(get_session)):
         data={"sub": user.email}
     )
     
-    response = RedirectResponse(url=f"http://localhost:3000/dashboard?token={access_token}")
+    response = RedirectResponse(url=f"{settings.frontend_url}/dashboard?token={access_token}")
     return response
 
 @router.get('/me')

@@ -7,8 +7,16 @@ from app.api.routes import api_router
 from app.core.middleware import setup_cors
 from app.core.config import settings
 
-app = FastAPI(title="AsyncPDF Backend API",version="1.0.0",)
-app.add_middleware(SessionMiddleware, secret_key=settings.secret_key)
+app = FastAPI(title="AsyncPDF Backend API", version="1.0.0")
+
+# Session management for OAuth state
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.secret_key,
+    session_cookie="asyncdoc_session",
+    same_site="lax",
+    https_only=True if settings.frontend_url.startswith("https") else False
+)
 
 
 @app.websocket("/ws")
