@@ -62,3 +62,12 @@ app.include_router(api_router)
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
+@app.get("/debug/settings")
+def debug_settings():
+    return {
+        "google_redirect_uri": settings.google_redirect_uri,
+        "frontend_url": settings.frontend_url,
+        "is_https": settings.frontend_url.startswith("https"),
+        "client_id": settings.google_client_id[:10] + "..." if settings.google_client_id else None
+    }

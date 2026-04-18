@@ -23,6 +23,9 @@ oauth.register(
 @router.get('/google/login')
 async def login(request: Request):
     redirect_uri = settings.google_redirect_uri
+    print(f"DEBUG: Initiating Google Login")
+    print(f"DEBUG: Configured Redirect URI: {redirect_uri}")
+    print(f"DEBUG: Request Headers: {dict(request.headers)}")
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 @router.get('/google/callback')
