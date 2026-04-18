@@ -1,15 +1,11 @@
 import asyncio
 import redis.asyncio as aioredis
-import logging
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.api.routes import api_router
 from app.core.middleware import setup_cors
 from app.core.config import settings
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 app = FastAPI(title="AsyncPDF Backend API", version="1.0.0")
 
@@ -66,12 +62,3 @@ app.include_router(api_router)
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
-
-@app.get("/debug/settings")
-def debug_settings():
-    return {
-        "google_redirect_uri": settings.google_redirect_uri,
-        "frontend_url": settings.frontend_url,
-        "is_https": settings.frontend_url.startswith("https"),
-        "client_id": settings.google_client_id[:10] + "..." if settings.google_client_id else None
-    }
