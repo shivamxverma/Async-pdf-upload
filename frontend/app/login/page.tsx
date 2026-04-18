@@ -1,9 +1,9 @@
-"use client";
+import { config } from "../../lib/config";
 
 export default function LoginPage() {
   const handleGoogleLogin = () => {
     // Redirect to backend login endpoint
-    window.location.href = "http://localhost:8000/api/v1/auth/google/login";
+    window.location.href = `${config.API_BASE_URL}/api/v1/auth/google/login`;
   };
 
   return (

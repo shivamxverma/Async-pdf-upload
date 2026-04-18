@@ -1,9 +1,10 @@
 import { useEffect, useRef } from "react";
 import { useJobStore } from "../store/useJobStore";
 
-// In a real app, this should be an env variable connecting to the backend WS protocol.
-// Depending on user's backend, I'll assume ws://localhost:8000/ws
-const WS_URL = "ws://localhost:8000/ws";
+import { config } from "../lib/config";
+
+// Use central configuration for WebSocket URL
+const WS_URL = config.WS_URL;
 
 export function useWebSocket() {
   const wsRef = useRef<WebSocket | null>(null);

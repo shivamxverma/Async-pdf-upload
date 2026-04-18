@@ -5,8 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, Plus, Filter, Inbox } from "lucide-react";
 import { useJobStore } from "../../store/useJobStore";
+import { config } from "../../lib/config";
 import { JobRow } from "../../components/JobRow";
-import { JobStatus } from "../../lib/types";
+import { JobStatus } from "@/lib/types";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -27,7 +28,7 @@ export default function Dashboard() {
       if (!token) return;
 
       try {
-        const response = await fetch("http://localhost:8000/api/v1/task", {
+        const response = await fetch(`${config.API_BASE_URL}/api/v1/task`, {
           headers: {
             "Authorization": `Bearer ${token}`
           }
@@ -152,7 +153,7 @@ export default function Dashboard() {
                   onRetry={async () => {
                     const token = localStorage.getItem("auth_token");
                     try {
-                      const res = await fetch(`http://localhost:8000/api/v1/task/${job.id}/retry`, {
+                      const res = await fetch(`${config.API_BASE_URL}/api/v1/task/${job.id}/retry`, {
                         method: "POST",
                         headers: { "Authorization": `Bearer ${token}` }
                       });

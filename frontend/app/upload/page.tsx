@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { FileUpload } from "../../components/FileUpload";
 import { useJobStore } from "../../store/useJobStore";
+import { config } from "../../lib/config";
 import { STEP_ORDER } from "../../lib/types";
 
 export default function UploadPage() {
@@ -33,7 +34,7 @@ export default function UploadPage() {
       const uploadPromises = files.map(async (file) => {
         try {
           // 1. Initiate the upload and get the pre-signed S3 URL
-          const response = await fetch("http://localhost:8000/api/v1/task/upload/initiate", {
+          const response = await fetch(`${config.API_BASE_URL}/api/v1/task/upload/initiate`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -73,7 +74,7 @@ export default function UploadPage() {
           }
 
           // 3. Notify the backend that the upload is complete
-          const completeResponse = await fetch("http://localhost:8000/api/v1/task/upload/complete", {
+          const completeResponse = await fetch(`${config.API_BASE_URL}/api/v1/task/upload/complete`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

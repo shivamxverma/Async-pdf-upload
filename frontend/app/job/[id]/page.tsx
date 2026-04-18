@@ -8,6 +8,7 @@ import { StatusBadge } from "../../../components/StatusBadge";
 import { ProgressBar } from "../../../components/ProgressBar";
 import { EditableField } from "../../../components/EditableField";
 import { useJobStore } from "../../../store/useJobStore";
+import { config } from "../../../lib/config";
 import { ExtractedData } from "../../../lib/types";
 import { toast } from "sonner";
 
@@ -31,7 +32,7 @@ export default function JobDetail({ params }: { params: Promise<{ id: string }> 
       if (!token) return;
 
       try {
-        const response = await fetch(`http://localhost:8000/api/v1/task/${id}`, {
+        const response = await fetch(`${config.API_BASE_URL}/api/v1/task/${id}`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
         if (!response.ok) throw new Error("Failed to fetch job");
@@ -93,7 +94,7 @@ export default function JobDetail({ params }: { params: Promise<{ id: string }> 
         extracted_keywords: data.keywords 
       };
 
-      const updateRes = await fetch(`http://localhost:8000/api/v1/task/document/${documentId}/result`, {
+      const updateRes = await fetch(`${config.API_BASE_URL}/api/v1/task/document/${documentId}/result`, {
         method: "PUT",
         headers: { 
           "Content-Type": "application/json",
@@ -106,7 +107,7 @@ export default function JobDetail({ params }: { params: Promise<{ id: string }> 
 
       // 2. Finalize if requested
       if (finalize) {
-        const finalizeRes = await fetch(`http://localhost:8000/api/v1/task/document/${documentId}/finalize`, {
+        const finalizeRes = await fetch(`${config.API_BASE_URL}/api/v1/task/document/${documentId}/finalize`, {
           method: "POST",
           headers: { "Authorization": `Bearer ${token}` }
         });
@@ -126,7 +127,7 @@ export default function JobDetail({ params }: { params: Promise<{ id: string }> 
   const handleExport = async (format: "json" | "csv") => {
     try {
       const token = localStorage.getItem("auth_token");
-      const response = await fetch(`http://localhost:8000/api/v1/task/${id}/export/${format}`, {
+      const response = await fetch(`${config.API_BASE_URL}/api/v1/task/${id}/export/${format}`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (!response.ok) throw new Error("Export failed");
